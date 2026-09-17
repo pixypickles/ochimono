@@ -54,24 +54,29 @@ function findEnclosures(){
 const DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
 function isWallColor(x,y,target){return board[y][x]===target||board[y][x]===WILD}
 function componentEnclosesOtherColor(comp,target){
-  // The left/right walls and floor behave like the color of the locked cell
-  // touching that wall segment. The ceiling always stays open.
-  // Flood-fill the space that can still reach the outside. A target-colored
-  // edge cell seals that exact wall/floor segment.
+  // A same-color connected mass can use the side walls / floor as part of its loop.
+  // If the mass touches the same wall at 2+ points, the wall segment between the
+  // outermost contacts is considered sealed in that color. The ceiling is always open.
   const inComp=Array.from({length:H},()=>Array(W).fill(false));
   comp.forEach(([x,y])=>inComp[y][x]=true);
+  const left=comp.filter(([x])=>x===0).map(([,y])=>y);
+  const right=comp.filter(([x])=>x===W-1).map(([,y])=>y);
+  const floor=comp.filter(([,y])=>y===H-1).map(([x])=>x);
+  const span=(arr,v)=>arr.length>=2&&v>=Math.min(...arr)&&v<=Math.max(...arr);
   const outside=Array.from({length:H},()=>Array(W).fill(false));
   const q=[];
   const add=(x,y)=>{
     if(x<0||x>=W||y<0||y>=H||outside[y][x]||inComp[y][x])return;
     outside[y][x]=true;q.push([x,y]);
   };
-  // Ceiling is always open.
+  // Ceiling is the only boundary that can never be sealed.
   for(let x=0;x<W;x++)add(x,0);
-  // Side/floor segments inherit the adjacent locked cell's color.
-  // If that cell is part of this target-colored enclosure, that segment is sealed.
-  for(let y=0;y<H;y++){add(0,y);add(W-1,y)}
-  for(let x=0;x<W;x++)add(x,H-1);
+  // Outside can enter through wall/floor segments not claimed by this component.
+  for(let y=0;y<H;y++){
+    if(!span(left,y))add(0,y);
+    if(!span(right,y))add(W-1,y);
+  }
+  for(let x=0;x<W;x++)if(!span(floor,x))add(x,H-1);
   for(let qi=0;qi<q.length;qi++){
     const[x,y]=q[qi];
     for(const[dx,dy]of DIRS)add(x+dx,y+dy);
@@ -82,6 +87,37 @@ function componentEnclosesOtherColor(comp,target){
     if(c!=null&&c!==target&&c!==WILD)return true;
   }
   return false;
+}
+
+function wallSpans(){
+  const spans=[];
+  for(let target=0;target<3;target++){
+    const seen=Array.from({length:H},()=>Array(W).fill(false));
+    for(let sy=0;sy<H;sy++)for(let sx=0;sx<W;sx++){
+      if(seen[sy][sx]||!isWallColor(sx,sy,target))continue;
+      const comp=[],stack=[[sx,sy]];seen[sy][sx]=true;
+      while(stack.length){
+        const[x,y]=stack.pop();comp.push([x,y]);
+        for(const[dx,dy]of DIRS){const X=x+dx,Y=y+dy;if(X>=0&&X<W&&Y>=0&&Y<H&&!seen[Y][X]&&isWallColor(X,Y,target)){seen[Y][X]=true;stack.push([X,Y])}}
+      }
+      const L=comp.filter(([x])=>x===0).map(([,y])=>y),R=comp.filter(([x])=>x===W-1).map(([,y])=>y),F=comp.filter(([,y])=>y===H-1).map(([x])=>x);
+      if(L.length>=2)spans.push(['L',Math.min(...L),Math.max(...L),target]);
+      if(R.length>=2)spans.push(['R',Math.min(...R),Math.max(...R),target]);
+      if(F.length>=2)spans.push(['F',Math.min(...F),Math.max(...F),target]);
+    }
+  }
+  return spans;
+}
+function drawWallSpans(){
+  ctx.save();ctx.lineWidth=8;ctx.lineCap='butt';
+  for(const[side,a,b,c] of wallSpans()){
+    ctx.strokeStyle=COLORS[c];ctx.beginPath();
+    if(side==='L'){ctx.moveTo(3,a*CELL);ctx.lineTo(3,(b+1)*CELL)}
+    if(side==='R'){ctx.moveTo(W*CELL-3,a*CELL);ctx.lineTo(W*CELL-3,(b+1)*CELL)}
+    if(side==='F'){ctx.moveTo(a*CELL,H*CELL-3);ctx.lineTo((b+1)*CELL,H*CELL-3)}
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 function gravity(){for(let x=0;x<W;x++){let vals=[];for(let y=H-1;y>=0;y--)if(board[y][x]!=null)vals.push(board[y][x]);for(let y=H-1,i=0;y>=0;y--)board[y][x]=i<vals.length?vals[i++]:null}}
 function cell(g,x,y,c,a=1,size=CELL,merged=false){
@@ -116,6 +152,7 @@ function draw(){
   for(let x=1;x<W;x++){ctx.beginPath();ctx.moveTo(x*CELL,0);ctx.lineTo(x*CELL,H*CELL);ctx.stroke()}
   for(let y=1;y<H;y++){ctx.beginPath();ctx.moveTo(0,y*CELL);ctx.lineTo(W*CELL,y*CELL);ctx.stroke()}
   for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(board[y][x]!=null)drawLockedCell(x,y,board[y][x]);
+  drawWallSpans();
   if(piece&&!over){
     let ghost=0;while(!collide(piece,0,ghost+1))ghost++;
     for(const[x,y]of piece.cells)if(y+piece.y+ghost>=0)cell(ctx,x+piece.x,y+piece.y+ghost,piece.color,.18);
