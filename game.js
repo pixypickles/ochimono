@@ -54,24 +54,30 @@ function findEnclosures(){
 const DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
 function isWallColor(x,y,target){return board[y][x]===target||board[y][x]===WILD}
 function componentEnclosesOtherColor(comp,target){
-  // Work on a one-cell padded board so the real board edge never counts as part of a loop.
-  const PW=W+2,PH=H+2;
-  const wall=Array.from({length:PH},()=>Array(PW).fill(false));
-  comp.forEach(([x,y])=>wall[y+1][x+1]=true);
-  const outside=Array.from({length:PH},()=>Array(PW).fill(false));
-  const q=[[0,0]]; outside[0][0]=true;
+  // The left/right walls and floor behave like the color of the locked cell
+  // touching that wall segment. The ceiling always stays open.
+  // Flood-fill the space that can still reach the outside. A target-colored
+  // edge cell seals that exact wall/floor segment.
+  const inComp=Array.from({length:H},()=>Array(W).fill(false));
+  comp.forEach(([x,y])=>inComp[y][x]=true);
+  const outside=Array.from({length:H},()=>Array(W).fill(false));
+  const q=[];
+  const add=(x,y)=>{
+    if(x<0||x>=W||y<0||y>=H||outside[y][x]||inComp[y][x])return;
+    outside[y][x]=true;q.push([x,y]);
+  };
+  // Ceiling is always open.
+  for(let x=0;x<W;x++)add(x,0);
+  // Side/floor segments inherit the adjacent locked cell's color.
+  // If that cell is part of this target-colored enclosure, that segment is sealed.
+  for(let y=0;y<H;y++){add(0,y);add(W-1,y)}
+  for(let x=0;x<W;x++)add(x,H-1);
   for(let qi=0;qi<q.length;qi++){
     const[x,y]=q[qi];
-    for(const[dx,dy]of DIRS){
-      const X=x+dx,Y=y+dy;
-      if(X>=0&&X<PW&&Y>=0&&Y<PH&&!outside[Y][X]&&!wall[Y][X]){
-        outside[Y][X]=true;q.push([X,Y]);
-      }
-    }
+    for(const[dx,dy]of DIRS)add(x+dx,y+dy);
   }
-  // Only another locked color counts as prey. An empty hole alone does not clear the ring.
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){
-    if(outside[y+1][x+1])continue;
+    if(outside[y][x]||inComp[y][x])continue;
     const c=board[y][x];
     if(c!=null&&c!==target&&c!==WILD)return true;
   }
