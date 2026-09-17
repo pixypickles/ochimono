@@ -39,8 +39,12 @@ Repository Settings > Pages から、Deploy from a branch を選び、`main` / r
 - オールカラーは赤・青・黄のどの接続にも使え、橋の消去時に一緒に消えます
 
 
-## v0.3
+## v0.4
 - 通常色を緑・紫・オレンジに変更
 - 左右の壁に、壁へ接触しているセルの色マーカーを表示
 - 操作ボタンを左側の方向キー群／右側の左回転・右回転ボタンに再配置
 - 左回転を追加（キーボード Z、右回転 X/↑）
+
+
+## v0.4 visual change
+Locked blocks of the same color now visually merge with no internal seam. Different colors retain a dark boundary. Falling pieces remain visibly segmented until they lock.
