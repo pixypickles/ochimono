@@ -1,9 +1,15 @@
 const W=8,H=16,CELL=40,COLORS=['#36c978','#9b6de3','#ff963d'];
 const WILD=3, WILD_RATE=0.08;
-const SHAPES=[[[0,0]],[[0,0],[1,0]],[[0,0],[1,0],[2,0]],[[0,0],[0,1],[1,1]],[[0,0],[1,0],[2,0],[3,0]],[[0,0],[1,0],[0,1],[1,1]],[[0,0],[1,0],[2,0],[1,1]],[[0,0],[0,1],[0,2],[1,2]]];
+const SHAPES=[
+  [[0,0],[1,0]],
+  [[0,0],[1,0],[2,0]],
+  [[0,0],[1,0],[2,0],[3,0]],
+  [[0,0],[1,0],[2,0],[3,0],[4,0]]
+];
+const SHAPE_WEIGHTS=[30,30,25,15];
 const cv=document.querySelector('#game'),ctx=cv.getContext('2d'),nv=document.querySelector('#next'),nx=nv.getContext('2d');
 let board,piece,queue,score,enclosures,over,last=0,acc=0,interval=650;
-function rndPiece(){let s=SHAPES[Math.floor(Math.random()*SHAPES.length)];return {cells:s.map(p=>[...p]),color:Math.random()<WILD_RATE?WILD:Math.floor(Math.random()*3),x:0,y:0}}
+function rndPiece(){let r=Math.random()*100,i=0;while(r>=SHAPE_WEIGHTS[i]&&i<SHAPE_WEIGHTS.length-1){r-=SHAPE_WEIGHTS[i];i++}let s=SHAPES[i];return {cells:s.map(p=>[...p]),color:Math.random()<WILD_RATE?WILD:Math.floor(Math.random()*3),x:0,y:0}}
 function spawn(){while(queue.length<4)queue.push(rndPiece());piece=queue.shift();piece.x=Math.floor((W-width(piece.cells))/2);piece.y=-minY(piece.cells);if(collide(piece,0,0))over=true}
 function width(c){return Math.max(...c.map(p=>p[0]))+1} function minY(c){return Math.min(...c.map(p=>p[1]) )}
 function collide(p,dx,dy,cells=p.cells){return cells.some(([x,y])=>{x+=p.x+dx;y+=p.y+dy;return x<0||x>=W||y>=H||(y>=0&&board[y][x]!=null)})}
