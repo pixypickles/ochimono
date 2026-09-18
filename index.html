@@ -1,5 +1,16 @@
-<!doctype html>
-<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Color Feast Drop</title><link rel="stylesheet" href="style.css"></head>
-<body><main><h1>Color Feast Drop <small>prototype v0.8</small></h1><div class="layout"><div class="boardWrap"><canvas id="game" width="320" height="640"></canvas></div><aside><div class="food"><span>FEAST COLOR</span><b id="foodName">PURPLE</b><strong id="count">16</strong><small>ピース後に紫を全消去</small></div><div class="stats">Score <b id="score">0</b><br>Chain <b id="chain">0</b></div><h2>NEXT</h2><canvas id="next" width="160" height="180"></canvas><button id="restart">RESTART</button><p>通常色は上下左右に<strong>3個以上</strong>つながると消えます。<br><strong>捕食予定色だけは何個つながっても消えません。</strong><br>残りピース数が0になると紫が盤面から全消去され、その瞬間だけ各セルに重力が働いて崩落・連鎖します。通常の着地では4個の実は房として形を維持します。紫は各ピースに最低1マス含まれます。</p></aside></div>
-<div class="controls"><div class="dpad"><button data-a="left">◀</button><button data-a="down">▼</button><button data-a="right">▶</button></div><div class="rot"><button data-a="rotL">↺<span>左回転</span></button><button data-a="rotR">↻<span>右回転</span></button></div></div><button class="drop" data-a="drop">HARD DROP</button>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Color Feast Drop</title><link rel="stylesheet" href="style.css"></head>
+<body><main>
+<header><div class="logo"><span>COLOR</span><b>FEAST DROP</b></div><div class="tag">房を育てて、紫喰いの大連鎖を仕込もう</div></header>
+<div class="layout">
+ <section class="gameShell"><div class="leaf l1">◆</div><div class="leaf l2">◆</div><div class="boardWrap"><canvas id="game" width="320" height="640"></canvas></div></section>
+ <aside>
+  <div class="beastCard"><div class="beast" id="beast"><i class="sp s1"></i><i class="sp s2"></i><i class="sp s3"></i><span class="eye"></span><span class="mouth"></span></div><div class="beastText"><small>紫の実を食べにくるまで</small><strong id="count">16</strong><b>房</b><em id="mood">まだまだ…</em></div></div>
+  <div class="nextCard"><h2>つぎの房</h2><canvas id="next" width="160" height="180"></canvas></div>
+  <div class="stats"><span>SCORE <b id="score">0</b></span><span>CHAIN <b id="chain">0</b></span></div>
+  <button id="restart">↻ はじめから</button>
+  <div class="rule"><b>紫は硬い殻つき</b><br>普通の実は3個以上つながると弾ける。紫だけは弾けず、16房ごとに紫喰いが全部食べる！</div>
+  <span id="foodName" hidden>PURPLE</span>
+ </aside>
+</div>
+<div class="controls"><div class="dpad"><button data-a="left">◀</button><button data-a="down">▼</button><button data-a="right">▶</button></div><div class="rot"><button data-a="rotL">↺<span>左回転</span></button><button data-a="rotR">↻<span>右回転</span></button></div></div><button class="drop" data-a="drop">一気に落とす</button>
 </main><script src="game.js"></script></body></html>

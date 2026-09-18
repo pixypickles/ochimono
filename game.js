@@ -90,7 +90,7 @@ function drawGroupVines(){
  for(let arr of by.values()){let set=new Set(arr.map(([x,y])=>x+','+y));for(let [x,y] of arr)for(let [dx,dy] of [[1,0],[0,1]])if(set.has((x+dx)+','+(y+dy)))vineBetween(x,y,x+dx,y+dy,.8)}
 }
 function drawPieceVines(p,gy=null,alpha=1){let pts=p.s.map(([sx,sy])=>[p.x+sx,(gy??p.y)+sy]);let set=new Set(pts.map(([x,y])=>x+','+y));for(let [x,y] of pts)for(let [dx,dy] of [[1,0],[0,1]])if(set.has((x+dx)+','+(y+dy)))vineBetween(x,y,x+dx,y+dy,alpha)}
-function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#080a0f';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.strokeStyle='rgba(255,255,255,.025)';for(let x=1;x<W;x++){ctx.beginPath();ctx.moveTo(x*C,0);ctx.lineTo(x*C,H*C);ctx.stroke()}for(let y=1;y<H;y++){ctx.beginPath();ctx.moveTo(0,y*C);ctx.lineTo(W*C,y*C);ctx.stroke()}
+function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);let bg=ctx.createLinearGradient(0,0,0,canvas.height);bg.addColorStop(0,'#182219');bg.addColorStop(.55,'#0d1510');bg.addColorStop(1,'#080d09');ctx.fillStyle=bg;ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='rgba(142,185,88,.035)';for(let i=0;i<18;i++){ctx.beginPath();ctx.arc((i*83)%320,(i*137)%640,18+(i%4)*9,0,Math.PI*2);ctx.fill()}ctx.strokeStyle='rgba(224,242,184,.035)';for(let x=1;x<W;x++){ctx.beginPath();ctx.moveTo(x*C,0);ctx.lineTo(x*C,H*C);ctx.stroke()}for(let y=1;y<H;y++){ctx.beginPath();ctx.moveTo(0,y*C);ctx.lineTo(W*C,y*C);ctx.stroke()}
  drawGroupVines();for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(board[y][x]!=null)fruit(x,y,board[y][x].c);
  if(cur&&!over){let gy=cur.y;while(!collide({...cur,y:gy},0,1))gy++;drawPieceVines(cur,gy,.25);for(let i=0;i<cur.s.length;i++){let [sx,sy]=cur.s[i],x=cur.x+sx,y=gy+sy;if(y>=0)fruit(x,y,cur.cols[i],true)}drawPieceVines(cur,null,1);for(let [x,y,c] of cells())if(y>=0)fruit(x,y,c)}if(eater.active){drawEater()}if(over){ctx.fillStyle='rgba(0,0,0,.72)';ctx.fillRect(0,250,320,100);ctx.fillStyle='white';ctx.font='bold 26px system-ui';ctx.textAlign='center';ctx.fillText('GAME OVER',160,305)}}
 function drawEater(){
@@ -106,7 +106,7 @@ function drawEater(){
  ctx.fillStyle='#17131f';ctx.beginPath();ctx.arc(-2,-11,2.5,0,Math.PI*2);ctx.fill();
  ctx.restore();
 }
-function ui(){document.querySelector('#score').textContent=score;document.querySelector('#count').textContent=feastCount;let el=document.querySelector('#foodName');el.textContent=colors[food].n;el.style.color=colors[food].v;drawNext()}
+function ui(){document.querySelector('#score').textContent=score;document.querySelector('#count').textContent=feastCount;let el=document.querySelector('#foodName');el.textContent=colors[food].n;el.style.color=colors[food].v;let beast=document.querySelector('#beast'),mood=document.querySelector('#mood');beast.classList.toggle('hungry',feastCount<=5);beast.classList.toggle('danger',feastCount<=2);mood.textContent=feastCount<=2?'もう待てない！':feastCount<=5?'おなかすいた…':feastCount<=9?'そろそろ…':'まだまだ…';drawNext()}
 function drawNext(){
  let c=document.querySelector('#next'),x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);
  function miniFruit(cx,cy,col){
