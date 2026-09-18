@@ -8,7 +8,22 @@ const DIFFICULTIES={easy:{feast:10,drop:2500,normals:2},normal:{feast:16,drop:19
 let soundOn=true,audioCtx=null;
 let eater={active:false,x:-60,mouth:0};
 function rand(n){return Math.floor(Math.random()*n)}
-function piece(){let s=SHAPES[rand(SHAPES.length)].map(p=>[...p]);let purpleSlot=rand(s.length);let cols=s.map((_,i)=>i===purpleSlot?1:(Math.random()<0.08?1:normalColorIds[rand(normalColorIds.length)]));return {s,cols,x:Math.floor(W/2),y:-2,g:groupSeq++}}
+function piece(){
+  let s=SHAPES[rand(SHAPES.length)].map(p=>[...p]);
+  // 1房（4個）の中で同じ色が3個以上にならないようにする。
+  // 紫は必ず最低1個含めるが、紫を含むどの色も最大2個まで。
+  let cols=[], counts={};
+  const purpleSlot=rand(s.length);
+  for(let i=0;i<s.length;i++){
+    if(i===purpleSlot){ cols.push(1); counts[1]=1; continue; }
+    let candidates=[1,...normalColorIds].filter(c=>(counts[c]||0)<2);
+    // 紫は追加候補としては低確率。通常色を優先する。
+    let normals=candidates.filter(c=>c!==1);
+    let c=(candidates.includes(1)&&Math.random()<0.08)?1:normals[rand(normals.length)];
+    cols.push(c); counts[c]=(counts[c]||0)+1;
+  }
+  return {s,cols,x:Math.floor(W/2),y:-2,g:groupSeq++};
+}
 function audio(){if(!soundOn)return null;if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();return audioCtx}
 function tone(freq,dur=.09,type='sine',vol=.05,delay=0){let a=audio();if(!a)return;let o=a.createOscillator(),gn=a.createGain(),t=a.currentTime+delay;o.type=type;o.frequency.setValueAtTime(freq,t);gn.gain.setValueAtTime(0.0001,t);gn.gain.exponentialRampToValueAtTime(vol,t+.008);gn.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.connect(gn).connect(a.destination);o.start(t);o.stop(t+dur+.02)}
 function sfxPop(chain){let base=330*Math.pow(1.16,Math.min(chain-1,7));tone(base,.10,'triangle',.055);tone(base*1.5,.11,'sine',.035,.055)}

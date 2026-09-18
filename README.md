@@ -15,3 +15,8 @@ GitHub Pagesでそのまま動くブラウザ版プロトタイプです。
 ## v1.1.1
 - Fixed/verified FEAST interval reset after every feast: Easy 10, Normal 16, Hard 22.
 - Added cache-busting query strings so GitHub Pages/browser does not reuse an older game.js.
+
+
+## v1.1.2
+- 1つの房（4個）の中に同じ色が3個以上入らないよう変更しました。
+- 紫は従来どおり各房に最低1個含まれますが、紫を含む全色が1房あたり最大2個です。
