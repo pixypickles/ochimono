@@ -13,22 +13,23 @@
     </div>
     <h2 class="selectTitle">難易度をえらぶ</h2>
     <div class="difficultyButtons">
-      <button data-difficulty="easy"><b>イージー</b><span>ゆっくり・紫喰いまで20房</span></button>
-      <button data-difficulty="normal" class="recommended"><b>ノーマル</b><span>標準・紫喰いまで16房</span><em>おすすめ</em></button>
-      <button data-difficulty="hard"><b>ハード</b><span>速め・紫喰いまで12房</span></button>
+      <button data-difficulty="easy"><b>イージー</b><span>通常2色・紫喰いまで10房・ゆっくり</span></button>
+      <button data-difficulty="normal" class="recommended"><b>ノーマル</b><span>通常3色・紫喰いまで16房・標準</span><em>おすすめ</em></button>
+      <button data-difficulty="hard"><b>ハード</b><span>通常4色・紫喰いまで22房・速め</span></button>
+      <div class="customBox"><b>カスタム</b><div><label>通常色 <select id="customColors"><option value="2">2色</option><option value="3" selected>3色</option><option value="4">4色</option></select></label><label>紫喰い <select id="customFeast"><option value="8">8房</option><option value="10">10房</option><option value="12">12房</option><option value="16" selected>16房</option><option value="20">20房</option><option value="24">24房</option></select></label><label>落下 <select id="customSpeed"><option value="2600">かなり遅い</option><option value="2100" selected>ゆっくり</option><option value="1600">標準</option><option value="1200">速い</option></select></label></div><button data-difficulty="custom" class="customStart">カスタムで開始</button></div>
     </div>
   </div>
 </section>
 <main id="gameScreen" class="hidden">
-<header><div class="logo"><span>COLOR</span><b>FEAST DROP</b></div><div class="tag">房を育てて、紫喰いの大連鎖を仕込もう</div></header>
+<header><div class="logo"><span>COLOR</span><b>FEAST DROP</b></div><div class="tag">房を育てて、紫喰いの大連鎖を仕込もう　<span id="modeLabel">NORMAL</span></div></header>
 <div class="layout">
  <section class="gameShell"><div class="leaf l1">◆</div><div class="leaf l2">◆</div><div class="boardWrap"><canvas id="game" width="320" height="640"></canvas></div></section>
  <aside>
   <div class="beastCard"><div class="beast" id="beast"><i class="sp s1"></i><i class="sp s2"></i><i class="sp s3"></i><span class="eye"></span><span class="mouth"></span></div><div class="beastText"><small>紫の実を食べにくるまで</small><strong id="count">16</strong><b>房</b><em id="mood">まだまだ…</em></div></div>
   <div class="nextCard"><h2>つぎの房</h2><canvas id="next" width="160" height="180"></canvas></div>
   <div class="stats"><span>SCORE <b id="score">0</b></span><span>CHAIN <b id="chain">0</b></span></div>
-  <div class="gameMenu"><button id="restart">↻ はじめから</button><button id="toTitle">⌂ タイトルへ戻る</button></div>
-  <div class="rule"><b>紫は硬い殻つき</b><br>普通の実は3個以上つながると弾ける。紫だけは弾けず、16房ごとに紫喰いが全部食べる！</div>
+  <div class="gameMenu"><button id="restart">↻ はじめから</button><button id="soundToggle">🔊 効果音</button><button id="toTitle">⌂ タイトルへ戻る</button></div>
+  <div class="rule"><b>紫は硬い殻つき</b><br>普通の実は3個以上つながると弾ける。紫だけは弾けず、難易度ごとの房数で紫喰いが全部食べる！</div>
   <span id="foodName" hidden>PURPLE</span>
  </aside>
 </div>

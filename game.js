@@ -1,13 +1,20 @@
 const W=8,H=16,C=40, canvas=document.querySelector('#game'),ctx=canvas.getContext('2d');
-const colors=[{n:'LIME',v:'#79d84b'},{n:'PURPLE',v:'#9b4de0'},{n:'ORANGE',v:'#ff8a2b'},{n:'SKY',v:'#2aaee8'}];
+const colors=[{n:'LIME',v:'#83dc45'},{n:'PURPLE',v:'#9b4de0'},{n:'ORANGE',v:'#ff8a2b'},{n:'SKY',v:'#279ee8'},{n:'PINK',v:'#ef5d9b'}];
 const SHAPES=[[[0,0],[1,0],[0,1],[1,1]],[[0,0],[-1,0],[1,0],[0,1]],[[0,0],[0,1],[0,2],[1,2]],[[0,0],[-1,0],[1,0],[1,1]],[[0,0],[-1,0],[0,1],[1,1]],[[0,0],[1,0],[-1,1],[0,1]],[[0,0],[-1,0],[1,0],[2,0]]];
 let board,cur,next=[],score,food,over=false,busy=false,last=0,dropMs=1800,groupSeq=1;
 let FEAST_PIECES=16; let feastCount=FEAST_PIECES, feastPending=false;
-let gameRunning=false, difficulty='normal';
-const DIFFICULTIES={easy:{feast:20,drop:2400},normal:{feast:16,drop:1800},hard:{feast:12,drop:1200}};
+let gameRunning=false, difficulty='normal', normalColorIds=[0,2,3];
+const DIFFICULTIES={easy:{feast:10,drop:2500,normals:2},normal:{feast:16,drop:1900,normals:3},hard:{feast:22,drop:1350,normals:4}};
+let soundOn=true,audioCtx=null;
 let eater={active:false,x:-60,mouth:0};
 function rand(n){return Math.floor(Math.random()*n)}
-function piece(){let s=SHAPES[rand(SHAPES.length)].map(p=>[...p]);let purpleSlot=rand(s.length);let cols=s.map((_,i)=>i===purpleSlot?1:(Math.random()<0.10?1:[0,2,3][rand(3)]));return {s,cols,x:Math.floor(W/2),y:-2,g:groupSeq++}}
+function piece(){let s=SHAPES[rand(SHAPES.length)].map(p=>[...p]);let purpleSlot=rand(s.length);let cols=s.map((_,i)=>i===purpleSlot?1:(Math.random()<0.08?1:normalColorIds[rand(normalColorIds.length)]));return {s,cols,x:Math.floor(W/2),y:-2,g:groupSeq++}}
+function audio(){if(!soundOn)return null;if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();return audioCtx}
+function tone(freq,dur=.09,type='sine',vol=.05,delay=0){let a=audio();if(!a)return;let o=a.createOscillator(),gn=a.createGain(),t=a.currentTime+delay;o.type=type;o.frequency.setValueAtTime(freq,t);gn.gain.setValueAtTime(0.0001,t);gn.gain.exponentialRampToValueAtTime(vol,t+.008);gn.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.connect(gn).connect(a.destination);o.start(t);o.stop(t+dur+.02)}
+function sfxPop(chain){let base=330*Math.pow(1.16,Math.min(chain-1,7));tone(base,.10,'triangle',.055);tone(base*1.5,.11,'sine',.035,.055)}
+function sfxFeast(){tone(105,.18,'sawtooth',.06);tone(78,.22,'square',.025,.09)}
+function sfxLand(){tone(145,.045,'triangle',.018)}
+function sfxGameOver(){tone(220,.18,'triangle',.04);tone(165,.2,'triangle',.04,.16);tone(110,.3,'triangle',.04,.32)}
 function reset(){last=0; gameRunning=true; board=Array.from({length:H},()=>Array(W).fill(null));score=0;food=1;over=false;busy=false;feastPending=false;feastCount=FEAST_PIECES;eater={active:false,x:-60,mouth:0};next=[piece(),piece(),piece()];spawn();ui();draw()}
 function spawn(){cur=next.shift();next.push(piece());cur.x=Math.floor(W/2);cur.y=-2;if(collide(cur,0,1)) over=true}
 function cells(p=cur){return p.s.map(([x,y],i)=>[p.x+x,p.y+y,p.cols[i]])}
@@ -15,19 +22,19 @@ function collide(p,dx=0,dy=0,s=p.s){for(let i=0;i<s.length;i++){let x=p.x+s[i][0
 function move(dx,dy){if(over||busy)return;if(!collide(cur,dx,dy)){cur.x+=dx;cur.y+=dy;draw()}else if(dy>0) lock()}
 function rotate(dir){if(over||busy)return;let ns=cur.s.map(([x,y])=>dir>0?[-y,x]:[y,-x]);for(let kick of [0,-1,1,-2,2])if(!collide(cur,kick,0,ns)){cur.s=ns;cur.x+=kick;draw();return}}
 function hard(){if(over||busy)return;while(!collide(cur,0,1))cur.y++;lock()}
-async function lock(){if(busy)return;for(let [x,y,c] of cells())if(y>=0)board[y][x]={c,g:cur.g}; if(cells().some(c=>c[1]<0)){over=true;draw();return}
+async function lock(){if(busy)return;sfxLand();for(let [x,y,c] of cells())if(y>=0)board[y][x]={c,g:cur.g}; if(cells().some(c=>c[1]<0)){over=true;sfxGameOver();draw();return}
  cur=null; feastCount--; ui(); draw();
  busy=true; await resolveNormal(); busy=false;
  if(feastCount<=0&&!over){feastPending=true;await feast();return}
  if(!over)spawn();ui();draw()}
 function groups(excludeFood=true){let seen=Array.from({length:H},()=>Array(W).fill(false)),out=[];for(let y=0;y<H;y++)for(let x=0;x<W;x++){let cell=board[y][x],c=cell?.c;if(cell==null||seen[y][x]||(excludeFood&&c===food))continue;let q=[[x,y]],g=[];seen[y][x]=true;while(q.length){let [a,b]=q.pop();g.push([a,b]);for(let [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){let nx=a+dx,ny=b+dy;if(nx>=0&&nx<W&&ny>=0&&ny<H&&!seen[ny][nx]&&board[ny][nx]?.c===c){seen[ny][nx]=true;q.push([nx,ny])}}}if(g.length>=3)out.push(g)}return out}
-async function resolveNormal(){let ch=0;while(true){let gs=groups(true);if(!gs.length)break;ch++;document.querySelector('#chain').textContent=ch;let n=0;for(let g of gs)for(let [x,y] of g){if(board[y][x]!=null){board[y][x]=null;n++}}score+=n*100*ch;draw();await wait(140);gravity();draw();await wait(140)}document.querySelector('#chain').textContent=ch}
+async function resolveNormal(){let ch=0;while(true){let gs=groups(true);if(!gs.length)break;ch++;sfxPop(ch);document.querySelector('#chain').textContent=ch;let n=0;for(let g of gs)for(let [x,y] of g){if(board[y][x]!=null){board[y][x]=null;n++}}score+=n*100*ch;draw();await wait(140);gravity();draw();await wait(140)}document.querySelector('#chain').textContent=ch}
 async function feast(){
  if(over)return;
  if(busy){feastPending=true;return}
  feastPending=false; busy=true;
  // 盤面を横切る紫の「食べる生き物」。通過した列の紫から順に消す。
- eater.active=true; eater.x=-C*1.2;
+ sfxFeast(); eater.active=true; eater.x=-C*1.2;
  const duration=1050, start=performance.now(), endX=W*C+C*1.2;
  let eaten=0;
  await new Promise(resolve=>{
@@ -121,7 +128,7 @@ function drawNext(){
  next.forEach((p,k)=>{let ox=75,oy=30+k*58,sz=18;let set=new Set(p.s.map(([a,b])=>a+','+b));x.strokeStyle='rgba(113,91,61,.75)';x.lineWidth=3;x.lineCap='round';p.s.forEach(([a,b])=>[[1,0],[0,1]].forEach(([dx,dy])=>{if(set.has((a+dx)+','+(b+dy))){x.beginPath();x.moveTo(ox+a*sz,oy+b*sz);x.lineTo(ox+(a+dx)*sz,oy+(b+dy)*sz);x.stroke()}}));p.s.forEach(([a,b],i)=>miniFruit(ox+a*sz,oy+b*sz,p.cols[i]))})
 }
 function act(a){if(a==='left')move(-1,0);if(a==='right')move(1,0);if(a==='down')move(0,1);if(a==='rotL')rotate(-1);if(a==='rotR')rotate(1);if(a==='drop')hard()}
-function startGame(mode){difficulty=mode;const d=DIFFICULTIES[mode];FEAST_PIECES=d.feast;dropMs=d.drop;document.querySelector('#titleScreen').classList.add('hidden');document.querySelector('#gameScreen').classList.remove('hidden');reset()}
+function startGame(mode){difficulty=mode;let d;if(mode==='custom'){d={feast:+document.querySelector('#customFeast').value,drop:+document.querySelector('#customSpeed').value,normals:+document.querySelector('#customColors').value}}else d=DIFFICULTIES[mode];FEAST_PIECES=d.feast;dropMs=d.drop;normalColorIds=[0,2,3,4].slice(0,d.normals);document.querySelector('#modeLabel').textContent=mode==='custom'?`CUSTOM / ${d.normals}色 / ${d.feast}房`:mode.toUpperCase();document.querySelector('#titleScreen').classList.add('hidden');document.querySelector('#gameScreen').classList.remove('hidden');audio();reset()}
 function showTitle(){gameRunning=false;busy=false;over=false;cur=null;document.querySelector('#gameScreen').classList.add('hidden');document.querySelector('#titleScreen').classList.remove('hidden')}
 document.querySelectorAll('[data-difficulty]').forEach(b=>b.addEventListener('click',()=>startGame(b.dataset.difficulty)));
 document.querySelector('#toTitle').onclick=showTitle;
@@ -129,3 +136,5 @@ document.querySelector('#toTitle').onclick=showTitle;
 document.querySelectorAll('[data-a]').forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault();act(b.dataset.a)}));document.querySelector('#restart').onclick=reset;
 addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowDown','ArrowUp',' ','z','Z','x','X'].includes(e.key))e.preventDefault();if(e.key==='ArrowLeft')act('left');if(e.key==='ArrowRight')act('right');if(e.key==='ArrowDown')act('down');if(e.key==='ArrowUp'||e.key==='x'||e.key==='X')act('rotR');if(e.key==='z'||e.key==='Z')act('rotL');if(e.key===' ')act('drop')});
 function loop(t){if(gameRunning){if(!last)last=t;if(t-last>dropMs&&!busy&&!over){move(0,1);last=t}draw()}requestAnimationFrame(loop)}requestAnimationFrame(loop);
+
+document.querySelector('#soundToggle').onclick=()=>{soundOn=!soundOn;document.querySelector('#soundToggle').textContent=soundOn?'🔊 効果音':'🔇 ミュート'};
