@@ -58,11 +58,25 @@ function wait(ms){return new Promise(r=>setTimeout(r,ms))}
 function fruit(x,y,c,ghost=false,small=false){
  const cx=x*C+C/2,cy=y*C+C/2,r=small?C*.30:C*.36;
  ctx.save();ctx.globalAlpha=ghost?0.30:1;
- // soft outer ring: keeps each fruit readable without square-block feel
- ctx.fillStyle='rgba(255,255,255,.08)';ctx.beginPath();ctx.arc(cx,cy,r+3,0,Math.PI*2);ctx.fill();
- ctx.fillStyle=colors[c].v;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
- // fruit highlight
- ctx.fillStyle='rgba(255,255,255,.28)';ctx.beginPath();ctx.ellipse(cx-r*.28,cy-r*.30,r*.16,r*.11,-.5,0,Math.PI*2);ctx.fill();
+ if(c===food){
+   // Purple fruit: a hard thorny shell. It never pops from normal 3-match clears.
+   const spikes=10, outer=r+6, inner=r+1;
+   ctx.fillStyle='rgba(255,255,255,.08)';ctx.beginPath();ctx.arc(cx,cy,outer+3,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='#7133a8';ctx.beginPath();
+   for(let i=0;i<spikes*2;i++){
+     const a=-Math.PI/2+i*Math.PI/spikes, rr=i%2===0?outer:inner;
+     const px=cx+Math.cos(a)*rr, py=cy+Math.sin(a)*rr;
+     if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+   }
+   ctx.closePath();ctx.fill();
+   // inner edible fruit peeking through the shell
+   ctx.fillStyle=colors[c].v;ctx.beginPath();ctx.arc(cx,cy,r*.78,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='rgba(255,255,255,.32)';ctx.beginPath();ctx.ellipse(cx-r*.20,cy-r*.22,r*.13,r*.09,-.5,0,Math.PI*2);ctx.fill();
+ }else{
+   ctx.fillStyle='rgba(255,255,255,.08)';ctx.beginPath();ctx.arc(cx,cy,r+3,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle=colors[c].v;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='rgba(255,255,255,.28)';ctx.beginPath();ctx.ellipse(cx-r*.28,cy-r*.30,r*.16,r*.11,-.5,0,Math.PI*2);ctx.fill();
+ }
  // tiny stem/leaf
  ctx.strokeStyle='rgba(58,76,42,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx,cy-r+2);ctx.quadraticCurveTo(cx+2,cy-r-5,cx+7,cy-r-7);ctx.stroke();
  ctx.fillStyle='rgba(105,170,72,.9)';ctx.beginPath();ctx.ellipse(cx+8,cy-r-7,5,2.5,.35,0,Math.PI*2);ctx.fill();
@@ -93,7 +107,17 @@ function drawEater(){
  ctx.restore();
 }
 function ui(){document.querySelector('#score').textContent=score;document.querySelector('#count').textContent=feastCount;let el=document.querySelector('#foodName');el.textContent=colors[food].n;el.style.color=colors[food].v;drawNext()}
-function drawNext(){let c=document.querySelector('#next'),x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);next.forEach((p,k)=>{let ox=75,oy=30+k*58,sz=18;let pts=p.s.map(([a,b])=>[ox+a*sz,oy+b*sz]);let set=new Set(p.s.map(([a,b])=>a+','+b));x.strokeStyle='rgba(113,91,61,.75)';x.lineWidth=3;x.lineCap='round';p.s.forEach(([a,b])=>[[1,0],[0,1]].forEach(([dx,dy])=>{if(set.has((a+dx)+','+(b+dy))){x.beginPath();x.moveTo(ox+a*sz,oy+b*sz);x.lineTo(ox+(a+dx)*sz,oy+(b+dy)*sz);x.stroke()}}));p.s.forEach(([a,b],i)=>{x.fillStyle=colors[p.cols[i]].v;x.beginPath();x.arc(ox+a*sz,oy+b*sz,7.5,0,Math.PI*2);x.fill()})})}
+function drawNext(){
+ let c=document.querySelector('#next'),x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);
+ function miniFruit(cx,cy,col){
+   if(col===food){
+     x.fillStyle='#7133a8';x.beginPath();const spikes=8;
+     for(let i=0;i<spikes*2;i++){let a=-Math.PI/2+i*Math.PI/spikes,rr=i%2===0?10:7.5,px=cx+Math.cos(a)*rr,py=cy+Math.sin(a)*rr;if(i===0)x.moveTo(px,py);else x.lineTo(px,py)}x.closePath();x.fill();
+     x.fillStyle=colors[col].v;x.beginPath();x.arc(cx,cy,5.8,0,Math.PI*2);x.fill();
+   }else{x.fillStyle=colors[col].v;x.beginPath();x.arc(cx,cy,7.5,0,Math.PI*2);x.fill()}
+ }
+ next.forEach((p,k)=>{let ox=75,oy=30+k*58,sz=18;let set=new Set(p.s.map(([a,b])=>a+','+b));x.strokeStyle='rgba(113,91,61,.75)';x.lineWidth=3;x.lineCap='round';p.s.forEach(([a,b])=>[[1,0],[0,1]].forEach(([dx,dy])=>{if(set.has((a+dx)+','+(b+dy))){x.beginPath();x.moveTo(ox+a*sz,oy+b*sz);x.lineTo(ox+(a+dx)*sz,oy+(b+dy)*sz);x.stroke()}}));p.s.forEach(([a,b],i)=>miniFruit(ox+a*sz,oy+b*sz,p.cols[i]))})
+}
 function act(a){if(a==='left')move(-1,0);if(a==='right')move(1,0);if(a==='down')move(0,1);if(a==='rotL')rotate(-1);if(a==='rotR')rotate(1);if(a==='drop')hard()}
 document.querySelectorAll('[data-a]').forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault();act(b.dataset.a)}));document.querySelector('#restart').onclick=reset;
 addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowDown','ArrowUp',' ','z','Z','x','X'].includes(e.key))e.preventDefault();if(e.key==='ArrowLeft')act('left');if(e.key==='ArrowRight')act('right');if(e.key==='ArrowDown')act('down');if(e.key==='ArrowUp'||e.key==='x'||e.key==='X')act('rotR');if(e.key==='z'||e.key==='Z')act('rotL');if(e.key===' ')act('drop')});
