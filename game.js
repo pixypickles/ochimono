@@ -2,11 +2,13 @@ const W=8,H=16,C=40, canvas=document.querySelector('#game'),ctx=canvas.getContex
 const colors=[{n:'LIME',v:'#79d84b'},{n:'PURPLE',v:'#9b4de0'},{n:'ORANGE',v:'#ff8a2b'},{n:'SKY',v:'#2aaee8'}];
 const SHAPES=[[[0,0],[1,0],[0,1],[1,1]],[[0,0],[-1,0],[1,0],[0,1]],[[0,0],[0,1],[0,2],[1,2]],[[0,0],[-1,0],[1,0],[1,1]],[[0,0],[-1,0],[0,1],[1,1]],[[0,0],[1,0],[-1,1],[0,1]],[[0,0],[-1,0],[1,0],[2,0]]];
 let board,cur,next=[],score,food,over=false,busy=false,last=0,dropMs=1800,groupSeq=1;
-const FEAST_PIECES=16; let feastCount=FEAST_PIECES, feastPending=false;
+let FEAST_PIECES=16; let feastCount=FEAST_PIECES, feastPending=false;
+let gameRunning=false, difficulty='normal';
+const DIFFICULTIES={easy:{feast:20,drop:2400},normal:{feast:16,drop:1800},hard:{feast:12,drop:1200}};
 let eater={active:false,x:-60,mouth:0};
 function rand(n){return Math.floor(Math.random()*n)}
 function piece(){let s=SHAPES[rand(SHAPES.length)].map(p=>[...p]);let purpleSlot=rand(s.length);let cols=s.map((_,i)=>i===purpleSlot?1:(Math.random()<0.10?1:[0,2,3][rand(3)]));return {s,cols,x:Math.floor(W/2),y:-2,g:groupSeq++}}
-function reset(){board=Array.from({length:H},()=>Array(W).fill(null));score=0;food=1;over=false;busy=false;feastPending=false;feastCount=FEAST_PIECES;eater={active:false,x:-60,mouth:0};next=[piece(),piece(),piece()];spawn();ui();draw()}
+function reset(){last=0; gameRunning=true; board=Array.from({length:H},()=>Array(W).fill(null));score=0;food=1;over=false;busy=false;feastPending=false;feastCount=FEAST_PIECES;eater={active:false,x:-60,mouth:0};next=[piece(),piece(),piece()];spawn();ui();draw()}
 function spawn(){cur=next.shift();next.push(piece());cur.x=Math.floor(W/2);cur.y=-2;if(collide(cur,0,1)) over=true}
 function cells(p=cur){return p.s.map(([x,y],i)=>[p.x+x,p.y+y,p.cols[i]])}
 function collide(p,dx=0,dy=0,s=p.s){for(let i=0;i<s.length;i++){let x=p.x+s[i][0]+dx,y=p.y+s[i][1]+dy;if(x<0||x>=W||y>=H)return true;if(y>=0&&board[y][x]!=null)return true}return false}
@@ -119,6 +121,11 @@ function drawNext(){
  next.forEach((p,k)=>{let ox=75,oy=30+k*58,sz=18;let set=new Set(p.s.map(([a,b])=>a+','+b));x.strokeStyle='rgba(113,91,61,.75)';x.lineWidth=3;x.lineCap='round';p.s.forEach(([a,b])=>[[1,0],[0,1]].forEach(([dx,dy])=>{if(set.has((a+dx)+','+(b+dy))){x.beginPath();x.moveTo(ox+a*sz,oy+b*sz);x.lineTo(ox+(a+dx)*sz,oy+(b+dy)*sz);x.stroke()}}));p.s.forEach(([a,b],i)=>miniFruit(ox+a*sz,oy+b*sz,p.cols[i]))})
 }
 function act(a){if(a==='left')move(-1,0);if(a==='right')move(1,0);if(a==='down')move(0,1);if(a==='rotL')rotate(-1);if(a==='rotR')rotate(1);if(a==='drop')hard()}
+function startGame(mode){difficulty=mode;const d=DIFFICULTIES[mode];FEAST_PIECES=d.feast;dropMs=d.drop;document.querySelector('#titleScreen').classList.add('hidden');document.querySelector('#gameScreen').classList.remove('hidden');reset()}
+function showTitle(){gameRunning=false;busy=false;over=false;cur=null;document.querySelector('#gameScreen').classList.add('hidden');document.querySelector('#titleScreen').classList.remove('hidden')}
+document.querySelectorAll('[data-difficulty]').forEach(b=>b.addEventListener('click',()=>startGame(b.dataset.difficulty)));
+document.querySelector('#toTitle').onclick=showTitle;
+
 document.querySelectorAll('[data-a]').forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault();act(b.dataset.a)}));document.querySelector('#restart').onclick=reset;
 addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowDown','ArrowUp',' ','z','Z','x','X'].includes(e.key))e.preventDefault();if(e.key==='ArrowLeft')act('left');if(e.key==='ArrowRight')act('right');if(e.key==='ArrowDown')act('down');if(e.key==='ArrowUp'||e.key==='x'||e.key==='X')act('rotR');if(e.key==='z'||e.key==='Z')act('rotL');if(e.key===' ')act('drop')});
-function loop(t){if(!last)last=t;if(t-last>dropMs&&!busy&&!over){move(0,1);last=t}draw();requestAnimationFrame(loop)}reset();requestAnimationFrame(loop);
+function loop(t){if(gameRunning){if(!last)last=t;if(t-last>dropMs&&!busy&&!over){move(0,1);last=t}draw()}requestAnimationFrame(loop)}requestAnimationFrame(loop);
