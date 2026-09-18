@@ -11,3 +11,7 @@ GitHub Pagesでそのまま動くブラウザ版プロトタイプです。
 - ゲーム中にミュート可能
 
 `index.html` を開くか、GitHub Pagesで公開してください。
+
+## v1.1.1
+- Fixed/verified FEAST interval reset after every feast: Easy 10, Normal 16, Hard 22.
+- Added cache-busting query strings so GitHub Pages/browser does not reuse an older game.js.
